@@ -1,1 +1,1 @@
-# thmmy-mailer
+# thmmy-notifier
