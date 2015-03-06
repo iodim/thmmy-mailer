@@ -7,8 +7,7 @@ module ThmmyNotifier
 
 		def initialize(username = 'guest', password = 'guest')
 			@username = username
-			@base_url = 'http://192.168.1.0/'
-			#@base_url = 'https://alexander.ee.auth.gr:8443/eTHMMY/'
+			@base_url = 'https://alexander.ee.auth.gr:8443/eTHMMY/'
 			login_slug = 'loginAction.do'
 
 			#cert_store = OpenSSL::X509::Store.new
@@ -24,16 +23,13 @@ module ThmmyNotifier
 			}
 
 			begin
-
 				tries ||= 3
-
 				login = @agent.post(
 					@base_url + login_slug, {
 					:username => username,
 					:password => password
 					}
 				)
-
 				if login.search("//a[starts-with(@href, \"/eTHMMY/logout.do\")]").empty?
 					raise WrongCredentials, 'Incorrent username and/or password'					
 				end
