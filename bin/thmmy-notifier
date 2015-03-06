@@ -1,0 +1,13 @@
+#!/usr/bin/ruby
+
+require File.dirname(__FILE__) + "/../lib/thmmy-notifier"
+
+	username = ARGV[0] ? ARGV[0] : 'guest'
+	password = ARGV[1] ? ARGV[1] : 'guest'
+
+	ThmmyNotifier::Ethmmy.login(username, password) do |agent|
+		#agent.get_all_subscription_announcements
+		#puts agent.get_all_announcements_by(77).map(&:body)
+		#puts agent.get_latest_announcement_by 74
+		#pp agent.get_all_courses
+	end
