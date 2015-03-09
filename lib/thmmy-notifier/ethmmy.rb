@@ -28,13 +28,13 @@ module ThmmyNotifier
 					}
 				)
 
-				raise LoginAsGuest if @username == 'guest'
+				raise LoginAsGuest, "Warning: logging in as guest, access limited" if @username == 'guest'
 
 				if login.search("//a[starts-with(@href, \"/eTHMMY/logout.do\")]").empty?
 					raise WrongCredentials, 'Incorrent username and/or password'					
 				end
 			rescue LoginAsGuest => e
-				puts "Warning: logging in as guest, access limited"
+				puts e
 			rescue WrongCredentials => e
 				puts e
 				exit
@@ -190,6 +190,7 @@ module ThmmyNotifier
 		def sanitize(announcement, id)
 			arr = announcement.search('p')
 			title = arr[0].text.scan(/[^\r\n\t]/).join.lstrip
+			date = arr[1].search('b').text.scan(/[^\r\n\t]/).join.lstrip
 			author = arr[1].search('i').text.scan(/[^\r\n\t]/).join.lstrip
 
 			announcement.search('p.listLabel').remove
@@ -203,7 +204,8 @@ module ThmmyNotifier
 				title: title,
 				author: author,
 				body: body,
-				courses_id: Course.where(ethmmy_id: id)[0].id
+				courses_id: Course.where(ethmmy_id: id)[0].id,
+				uhash: Digest::MD5.hexdigest(title+date+author)
 			)
 		end
 	end

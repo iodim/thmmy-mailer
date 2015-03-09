@@ -4,6 +4,7 @@ class CreateAnnouncements < ActiveRecord::Migration
 			t.string :title
 			t.string :author
 			t.string :body
+			t.string :uhash
 			t.belongs_to :courses
 			t.timestamps null: false
 		end
