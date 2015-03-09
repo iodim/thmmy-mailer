@@ -1,5 +1,3 @@
-#!/usr/bin/ruby
-
 # Individual announcements
 # http://psyche.ee.auth.gr/index.php?view=article&news&id=223&tmpl=component
 

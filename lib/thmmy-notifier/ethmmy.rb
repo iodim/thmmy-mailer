@@ -1,6 +1,3 @@
-#!/usr/bin/ruby
-
-#require 'mechanize'
 module ThmmyNotifier
 	class Ethmmy
 		attr_reader :subscriptions, :username
@@ -30,9 +27,14 @@ module ThmmyNotifier
 					:password => password
 					}
 				)
+
+				raise LoginAsGuest if @username == 'guest'
+
 				if login.search("//a[starts-with(@href, \"/eTHMMY/logout.do\")]").empty?
 					raise WrongCredentials, 'Incorrent username and/or password'					
 				end
+			rescue LoginAsGuest => e
+				puts "Warning: logging in as guest, access limited"
 			rescue WrongCredentials => e
 				puts e
 				exit
@@ -130,7 +132,7 @@ module ThmmyNotifier
 				announcement = announcements_page.search('p.listLabel').first
 			end
 			unsuscribe_from id unless @subscriptions.include? id
-			return ethmmy_sanitize announcement.parent unless announcement.nil?
+			return sanitize(announcement.parent, id) unless announcement.nil?
 		end
 
 		def get_all_announcements_by(id)
@@ -142,7 +144,7 @@ module ThmmyNotifier
 				announcements_board = announcements_page.search('p.listLabel').map(&:parent)
 				unless announcements_board.nil?
 					announcements_board.each do |announcement|
-						announcements << ethmmy_sanitize(announcement)
+						announcements << sanitize(announcement, id)
 					end
 				end
 			end
@@ -183,6 +185,22 @@ module ThmmyNotifier
 		def course_login_to(id)
 			course_login_slug = 'cms.course.login.do?method=execute&PRMID='
 			@agent.get(@base_url + course_login_slug + id.to_s)
+		end
+
+		def sanitize(announcement, id)
+			arr = announcement.search('p')
+			title = arr[0].text.scan(/[^\r\n\t]/).join.lstrip
+			date = arr[1].search('b').text.scan(/[^\r\n\t]/).join.lstrip
+			author = arr[1].search('i').text.scan(/[^\r\n\t]/).join.lstrip
+
+			announcement.search('p.listLabel').remove
+			announcement.search('p > b').remove
+			announcement.search('p > i').remove
+			body = announcement.to_html(:encoding => 'UTF-8').gsub('&amp;', '&')
+
+			Course.create(title: 'sae', ethmmy_id: id)
+
+			return Announcement.create(title: title, author: author, body: body, courses_id: Course.where(ethmmy_id: id)[0].id)
 		end
 	end
 end

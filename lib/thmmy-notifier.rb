@@ -1,11 +1,10 @@
-#!/usr/bin/ruby
-
 $LOAD_PATH.unshift(File.dirname(__FILE__))
 
-#require 'rubygems'
-#require 'activerecord'
-
+require 'yaml'
+require 'sqlite3'
 require 'mechanize'
+require 'active_record'
+require 'thmmy-notifier/db'
 require 'thmmy-notifier/ethmmy'
 require 'thmmy-notifier/helpers'
 require 'thmmy-notifier/exceptions'

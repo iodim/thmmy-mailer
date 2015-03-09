@@ -1,4 +1,7 @@
 module ThmmyNotifier
+	class LoginAsGuest < StandardError
+	end
+
 	class WrongCredentials < StandardError
 	end
 
