@@ -190,7 +190,6 @@ module ThmmyNotifier
 		def sanitize(announcement, id)
 			arr = announcement.search('p')
 			title = arr[0].text.scan(/[^\r\n\t]/).join.lstrip
-			date = arr[1].search('b').text.scan(/[^\r\n\t]/).join.lstrip
 			author = arr[1].search('i').text.scan(/[^\r\n\t]/).join.lstrip
 
 			announcement.search('p.listLabel').remove
@@ -198,9 +197,14 @@ module ThmmyNotifier
 			announcement.search('p > i').remove
 			body = announcement.to_html(:encoding => 'UTF-8').gsub('&amp;', '&')
 
-			Course.create(title: 'sae', ethmmy_id: id)
+			pp Course.create(title: 'sae',ethmmy_id: id)
 
-			return Announcement.create(title: title, author: author, body: body, courses_id: Course.where(ethmmy_id: id)[0].id)
+			return Announcement.create(
+				title: title,
+				author: author,
+				body: body,
+				courses_id: Course.where(ethmmy_id: id)[0].id
+			)
 		end
 	end
 end

@@ -40,7 +40,7 @@ namespace :db do
   end
 
   task :configuration => :environment do
-    @config = YAML.load_file('config/databases.yml')[DATABASE_ENV]
+    @config = YAML.load_file('config/database.yml')[DATABASE_ENV]
   end
 
   task :configure_connection => :configuration do
@@ -74,4 +74,14 @@ namespace :db do
   task :version => :configure_connection do
     puts "Current version: #{ActiveRecord::Migrator.current_version}"
   end
+
+  desc "Resets the database to the latest schema (will delete database!)"
+  task :reset => :configure_connection do
+    puts "Deleting previous database"
+    rm_rf @config['database']
+    puts "Regenerating database"
+    ActiveRecord::Migration.verbose = true
+    ActiveRecord::Migrator.migrate MIGRATIONS_DIR, ENV['VERSION'] ? ENV['VERSION'].to_i : nil
+  end
+
 end
