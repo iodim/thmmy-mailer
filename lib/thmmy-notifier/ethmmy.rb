@@ -4,8 +4,8 @@ module ThmmyNotifier
 
 		def initialize(username = 'guest', password = 'guest')
 			@username = username
+			@password = password
 			@base_url = 'https://alexander.ee.auth.gr:8443/eTHMMY/'
-			login_slug = 'loginAction.do'
 
 			#cert_store = OpenSSL::X509::Store.new
 			#cert_store.set_default_paths
@@ -18,55 +18,32 @@ module ThmmyNotifier
 				  agent.verify_mode= OpenSSL::SSL::VERIFY_NONE
 				  #agent.agent.http.ca_file = File.expand_path('./cacert.pem')
 			}
-
-			begin
-				tries ||= 3
-				login = @agent.post(
-					@base_url + login_slug, {
-					:username => username,
-					:password => password
-					}
-				)
-
-				raise LoginAsGuest, "Warning: logging in as guest, access limited" if @username == 'guest'
-
-				if login.search("//a[starts-with(@href, \"/eTHMMY/logout.do\")]").empty?
-					raise WrongCredentials, 'Incorrent username and/or password'					
-				end
-			rescue LoginAsGuest => e
-				puts e
-			rescue WrongCredentials => e
-				puts e
-				exit
-			rescue TimeoutError => e
-				print e 
-				if tries > 1
-					puts '. Retrying'
-					sleep(1)
-					tries -= 1
-					retry
-				end
-				puts '. Exiting'
-				exit
-			rescue NetworkUnreachable => e
-				print e 
-				if tries > 1
-					puts '. Retrying'
-					sleep(1)
-					tries -= 1
-					retry
-				end
-				puts '. Exiting'
-				exit
-			end
-
-			@subscriptions = get_subscriptions
 		end
 
 		def self.login(username = 'guest', password = 'guest')
 			ethmmy_instance = Ethmmy.new(username, password)
+			ethmmy_instance.login
 			yield ethmmy_instance
 			ethmmy_instance.logout
+		end
+
+		def login
+			login_slug = 'loginAction.do'
+
+			login = @agent.post(
+				@base_url + login_slug, {
+				:username => @username,
+				:password => @password
+				}
+			)
+
+			raise LoginAsGuest, "Warning: logging in as guest, access limited" if @username == 'guest'
+
+			if login.search("//a[starts-with(@href, \"/eTHMMY/logout.do\")]").empty?
+				raise WrongCredentials, 'Incorrent username and/or password'					
+			end
+
+			@subscriptions = get_subscriptions
 		end
 
 		def logout
@@ -123,71 +100,70 @@ module ThmmyNotifier
 			return subscriptions
 		end
 
-		def get_latest_announcement_by(id)
+		def get_latest_announcement_by(ethmmy_id)
 			announcement = nil
-			subscribe_to id unless @subscriptions.include? id
-			course_login_to id
+			subscribe_to ethmmy_id unless @subscriptions.include? ethmmy_id
+			course_login_to ethmmy_id
 			announcements_slug = 'cms.announcement.data.do?method=jsplist&PRMID='
-			@agent.get(@base_url + announcements_slug + id.to_s) do |announcements_page|
+			@agent.get(@base_url + announcements_slug + ethmmy_id.to_s) do |announcements_page|
 				announcement = announcements_page.search('p.listLabel').first
 			end
-			unsuscribe_from id unless @subscriptions.include? id
-			return sanitize(announcement.parent, id) unless announcement.nil?
+			unsuscribe_from ethmmy_id unless @subscriptions.include? ethmmy_id
+			return sanitize(announcement.parent, ethmmy_id) unless announcement.nil?
 		end
 
-		def get_all_announcements_by(id)
+		def get_all_announcements_by(ethmmy_id)
 			announcements = []
-			subscribe_to id unless @subscriptions.include? id
-			course_login_to id
+			subscribe_to ethmmy_id unless @subscriptions.include? ethmmy_id
+			course_login_to ethmmy_id
 			announcements_slug = 'cms.announcement.data.do?method=jsplist&PRMID='
-			@agent.get(@base_url + announcements_slug + id.to_s) do |announcements_page|
+			@agent.get(@base_url + announcements_slug + ethmmy_id.to_s) do |announcements_page|
 				announcements_board = announcements_page.search('p.listLabel').map(&:parent)
 				unless announcements_board.nil?
 					announcements_board.each do |announcement|
-						announcements << sanitize(announcement, id)
+						announcements << sanitize(announcement, ethmmy_id)
 					end
 				end
 			end
-			unsuscribe_from id unless @subscriptions.include? id
+			unsuscribe_from ethmmy_id unless @subscriptions.include? ethmmy_id
 			return announcements
 		end
 
 		def get_all_subscription_announcements
 			announcements = {}
-			@subscriptions.each do |id|
-				p id
-				announcements[id] = get_all_announcements_by id
+			@subscriptions.each do |ethmmy_id|
+				announcements[ethmmy_id] = get_all_announcements_by ethmmy_id
 			end
 			return announcements
 		end
 
-		def subscribe_to(id)
+		def subscribe_to(ethmmy_id)
 			subscribe_slug = 'cms.course.data.do?method=jspregister&PRMID='
-			@agent.get(@base_url + subscribe_slug + id.to_s)
+			@agent.get(@base_url + subscribe_slug + ethmmy_id.to_s)
 		end
 
-		def subscribe_to!(id)
-			subscribe_to id
-			@subscriptions << id
+		def subscribe_to!(ethmmy_id)
+			subscribe_to ethmmy_id
+			@subscriptions << ethmmy_id
 			#@subscriptions.sort!
 		end
 
-		def unsuscribe_from(id)
+		def unsuscribe_from(ethmmy_id)
 			unsuscribe_slug = 'cms.course.data.do?method=jspunregister&PRMID='
-			@agent.get(@base_url + unsuscribe_slug + id.to_s)
+			@agent.get(@base_url + unsuscribe_slug + ethmmy_id.to_s)
 		end
 
-		def unsubscribe_from!(id)
-			unsubscribe_from id
-			@subscriptions.delete id
+		def unsubscribe_from!(ethmmy_id)
+			unsubscribe_from ethmmy_id
+			@subscriptions.delete ethmmy_id
 		end
 
-		def course_login_to(id)
+		def course_login_to(ethmmy_id)
 			course_login_slug = 'cms.course.login.do?method=execute&PRMID='
-			@agent.get(@base_url + course_login_slug + id.to_s)
+			@agent.get(@base_url + course_login_slug + ethmmy_id.to_s)
 		end
 
-		def sanitize(announcement, id)
+		def sanitize(announcement, ethmmy_id)
 			arr = announcement.search('p')
 			title = arr[0].text.scan(/[^\r\n\t]/).join.lstrip
 			date = arr[1].search('b').text.scan(/[^\r\n\t]/).join.lstrip
@@ -198,15 +174,21 @@ module ThmmyNotifier
 			announcement.search('p > i').remove
 			body = announcement.to_html(:encoding => 'UTF-8').gsub('&amp;', '&')
 
-			pp Course.create(title: 'sae',ethmmy_id: id)
+			return {title: title,
+			 	date: date,
+			 	author: author,
+			 	body: body,
+			 	uhash: Digest::MD5.hexdigest(title+date+author)
+			}
 
-			return Announcement.create(
-				title: title,
-				author: author,
-				body: body,
-				courses_id: Course.where(ethmmy_id: id)[0].id,
-				uhash: Digest::MD5.hexdigest(title+date+author)
-			)
+			# return Announcement.create(
+			# 	title: title,
+			# 	date: date,
+			# 	author: author,
+			# 	body: body,
+			# 	courses_id: Course.where(ethmmy_id: id)[0].id,
+			# 	uhash: Digest::MD5.hexdigest(title+date+author)
+			# )
 		end
 	end
 end

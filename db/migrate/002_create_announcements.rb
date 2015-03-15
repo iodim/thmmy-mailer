@@ -2,6 +2,7 @@ class CreateAnnouncements < ActiveRecord::Migration
 	def self.up
 		create_table :announcements do |t|
 			t.string :title
+			t.string :date
 			t.string :author
 			t.string :body
 			t.string :uhash
@@ -10,6 +11,7 @@ class CreateAnnouncements < ActiveRecord::Migration
 		end
 
 		add_index :announcements, :courses_id
+		add_index :announcements, :uhash
 	end
 
 	def self.down

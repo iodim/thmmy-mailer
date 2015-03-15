@@ -2,12 +2,29 @@
 
 require File.dirname(__FILE__) + "/../lib/thmmy-notifier"
 
-	username = ARGV[0] ? ARGV[0] : 'guest'
-	password = ARGV[1] ? ARGV[1] : 'guest'
+#RubyVM::InstructionSequence.compile_option = {
+#  :tailcall_optimization => true,
+#  :trace_instruction => false
+#}
 
-	ThmmyNotifier::Ethmmy.login(username, password) do |agent|
-		#agent.get_all_subscription_announcements
-		#puts agent.get_all_announcements_by(77).map(&:body)
-		pp agent.get_latest_announcement_by 74
-		#pp agent.get_all_courses
-	end
+username = ARGV[0] ? ARGV[0] : 'guest'
+password = ARGV[1] ? ARGV[1] : 'guest'
+
+#RubyProf.start
+
+ThmmyNotifier::init_ethmmy_agent(username, password)
+ThmmyNotifier::build_courses_cache
+#ThmmyNotifier::populate_courses_table
+#ThmmyNotifier::populate_announcements_table
+while 1 do
+	puts "Checking for new announcements..."
+	ThmmyNotifier::check_for_new_announcements
+	sleep(600)
+end
+
+
+
+ThmmyNotifier::kill_ethmmy_agent
+
+#result = RubyProf.stop
+#RubyProf::GraphHtmlPrinter.new(result).print(File.open('profile.html', 'w'))
