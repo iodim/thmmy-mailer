@@ -14,11 +14,10 @@ password = ARGV[1] ? ARGV[1] : 'guest'
 
 ThmmyNotifier::init_ethmmy_agent(username, password)
 ThmmyNotifier::build_courses_cache
-#ThmmyNotifier::populate_courses_table
-#ThmmyNotifier::populate_announcements_table
+ThmmyNotifier::populate_courses_table
+ThmmyNotifier::populate_announcements_table(username, password)
 while 1 do
-	puts "Checking for new announcements..."
-	ThmmyNotifier::check_for_new_announcements
+	ThmmyNotifier::check_for_new_announcements(username, password)
 	sleep(600)
 end
 
